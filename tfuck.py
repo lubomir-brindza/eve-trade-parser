@@ -16,7 +16,7 @@ tmp=[]; master=[]; tmaster=[]; buy=[]; sell=[]; filelist=[]; items=[];
 def icn(x):
   return int(float(x))
 
-def formatnames(x,y):                                                 # compact output of item/region names
+def formatnames(x,y):                                                 # truncate item/region names
   word=''
   words=x.split(' ')
   for i in range(0,len(words)):
