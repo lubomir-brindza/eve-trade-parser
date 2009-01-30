@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# tradeFucker 2000 v0.5 by Halka
+# tradeFucker 2000 v0.5 by Halka (with many thanks to Konstantin Suvakin)
 # parses .txt files (eve online market dumps)
 
 import os, sys
