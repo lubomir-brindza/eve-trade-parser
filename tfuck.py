@@ -1,21 +1,21 @@
 #!/usr/bin/python
-
+ 
 # tradeFucker 2000 v0.5 by Halka (with many thanks to Konstantin Suvakin)
 # parses .txt files (eve online market dumps)
-
+ 
 import os, sys
 import time                                                            # for benchmarking
-
+ 
 path = '.'
 maxdev = 1.2                                                            # max deviation of sell price (for sell order grouping)
 capacity = 167.0                                                        # capacity of ship's cargo hold - m^3
-minmargin = 500000                                                      # minimal trip revenue
-
+minmargin = 10000                                                       # minimal trip revenue
+ 
 tmp=[]; master=[]; tmaster=[]; buy=[]; sell=[]; filelist=[]; items=[]; 
-
+ 
 def icn(x):
   return int(float(x))
-
+ 
 def formatnames(x,y):                                                 # truncate item/region names
   word=''
   words=x.split(' ')
@@ -38,7 +38,7 @@ try:
   idb = None
 except: pass
   
-print "Reading files:"
+print "reading files...",
 t_start = time.time()
 for root, dirs, files in os.walk(path):
   for filename in files:
@@ -56,9 +56,9 @@ for root, dirs, files in os.walk(path):
       else: 
         filelist.append(tmp)
 t_end = time.time()
-print "take ", t_end - t_start,"s"
-
-print "Generating items list:"
+print "took ", t_end - t_start,"s"
+ 
+print "generating items list...",
 t_start = time.time()
 for file in filelist:
   file[2] = file[2]+'.txt'
@@ -72,20 +72,19 @@ for file in filelist:
     if not inside(tmplist[2],items,1):
       items.append((file[1],tmplist[2],'1.0'))    
 t_end = time.time()
-print "take ", t_end-t_start,"s "
-
-
+print "took ", t_end-t_start,"s "
+ 
+ 
 idb = open('_items.csv','w')
 items.sort()
 for line in items:
   idb.write(';'.join(line)+'\n')
 idb.close()
-
+ 
 volumes = {}                                                            # load item volumes
 for item in items:
   volumes[item[1]] = float(item[2])  
-
-"Make master:"
+ 
 t_start = time.time()
 tmp = master[0]
 # sell order grouping
@@ -102,12 +101,11 @@ for i in range(1,len(master)):
     tmp = master[i]
     tcena = master[i][0]
 t_end = time.time()
-print "takes ", t_end-t_start,"s"
-
+print "took ", t_end-t_start,"s"
+ 
 master = tmaster
     
 for i in master:
-    # Tu je zmena - pripravime narocne konverzie mimo hlavneho cyklu
     i[0] = icn(i[0])
     i[1] = icn(i[1])
     i[15] = formatnames(i[15],8)
@@ -117,34 +115,34 @@ for i in master:
         sell.append(i)
     elif i[7] == 'True':
         buy.append(i)
-
+ 
 # groupedMaster = {"ItemID":{"sell":[],"buy":[]},....}
-
+ 
 groupedMaster = {}
-
+ 
 for item in sell:
     if item[2] in groupedMaster.keys():
         groupedMaster[item[2]]['sell'].append(item)
     else:
         groupedMaster[item[2]] = {'sell':[item],'buy':[]}
-
+ 
 for item in buy:
     if item[2] in groupedMaster.keys():
         groupedMaster[item[2]]['buy'].append(item)
     else:
         groupedMaster[item[2]] = {'sell':[],'buy':[item]}
-
-print "Found %d distinct item types" % len(groupedMaster)
-
-print "Buy list length: ", len(buy)
-print "Sell list length: ", len(sell)
-print "Total cycles: ",len(buy)*len(sell)
-
-print "Main cycle: "
-
+ 
+print "found %d distinct item types" % len(groupedMaster)
+ 
+print "buy list length: ", len(buy)
+print "sell list length: ", len(sell)
+print "total cycles: ", len(buy)*len(sell)
+ 
+print "main cycle...",
+ 
 t_start = time.time()
 print('item type               buy orders    region           sell orders    region       trip profit      date dumped') # header    
-
+ 
 realIterations = 0
 combCount = 0
 for itemType in groupedMaster.keys():
@@ -160,10 +158,9 @@ for itemType in groupedMaster.keys():
                     print('>>'),
                     print('%28s %17s' % (' '.join((str(buyItem[1]),'x',str(buyItem[0]),'isk ['+buyItem[15]+']')), '('+str(margin)+' isk)')),
                     print(' ... '+buyItem[-2]+' - '+sellItem[-2])
-
+ 
 t_end = time.time()
-print "takes ",t_end-t_start,"s"
-
+print "took ",t_end-t_start,"s"
+ 
 print "%d iterations complete" % realIterations
-print "I have %d valid combinations" % combCount
-
+print "i have %d valid combinations" % combCount
