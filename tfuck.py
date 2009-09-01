@@ -9,7 +9,7 @@ import time                                                            # for ben
 path = '.'
 maxdev = 1.2                                                            # max deviation of sell price (for sell order grouping)
 capacity = 167.0                                                        # capacity of ship's cargo hold - m^3
-minmargin = 10000                                                       # minimal trip revenue
+minmargin = 500000                                                      # minimal trip revenue
  
 tmp=[]; master=[]; tmaster=[]; buy=[]; sell=[]; filelist=[]; items=[]; 
  
@@ -37,8 +37,11 @@ try:
     items.append(line.replace('\n','').split(';'))
   idb = None
 except: pass
+
+print 'current settings:\n%-20s %s m^3\n%-20s %s isk\n%-20s %s' % ('cargo capacity:',capacity,'min. profit margin:',minmargin,'price deviation:',(maxdev-1)*100),
+print "%"
   
-print "reading files...",
+print "\nreading files...",
 t_start = time.time()
 for root, dirs, files in os.walk(path):
   for filename in files:
@@ -56,9 +59,9 @@ for root, dirs, files in os.walk(path):
       else: 
         filelist.append(tmp)
 t_end = time.time()
-print "took ", t_end - t_start,"s"
+print "took %.3f s" % (t_end-t_start)
  
-print "generating items list...",
+print "generating item list...",
 t_start = time.time()
 for file in filelist:
   file[2] = file[2]+'.txt'
@@ -72,7 +75,7 @@ for file in filelist:
     if not inside(tmplist[2],items,1):
       items.append((file[1],tmplist[2],'1.0'))    
 t_end = time.time()
-print "took ", t_end-t_start,"s "
+print "took %.3f s" % (t_end-t_start)
  
  
 idb = open('_items.csv','w')
@@ -84,9 +87,9 @@ idb.close()
 volumes = {}                                                            # load item volumes
 for item in items:
   volumes[item[1]] = float(item[2])  
- 
-t_start = time.time()
+
 tmp = master[0]
+
 # sell order grouping
 tcena = float(master[0][0])
 for i in range(1,len(master)):
@@ -100,8 +103,6 @@ for i in range(1,len(master)):
     tmaster.append(tmp)
     tmp = master[i]
     tcena = master[i][0]
-t_end = time.time()
-print "took ", t_end-t_start,"s"
  
 master = tmaster
     
@@ -119,29 +120,30 @@ for i in master:
 # groupedMaster = {"ItemID":{"sell":[],"buy":[]},....}
  
 groupedMaster = {}
- 
+
 for item in sell:
     if item[2] in groupedMaster.keys():
         groupedMaster[item[2]]['sell'].append(item)
     else:
         groupedMaster[item[2]] = {'sell':[item],'buy':[]}
- 
 for item in buy:
     if item[2] in groupedMaster.keys():
         groupedMaster[item[2]]['buy'].append(item)
     else:
         groupedMaster[item[2]] = {'sell':[],'buy':[item]}
+
+#print groupedMaster
+  
+print "found %d distinct item types\n" % len(groupedMaster)
  
-print "found %d distinct item types" % len(groupedMaster)
+#print "buy list length: ", len(buy)
+#print "sell list length: ", len(sell)
+#print "total cycles: ", len(buy)*len(sell)
  
-print "buy list length: ", len(buy)
-print "sell list length: ", len(sell)
-print "total cycles: ", len(buy)*len(sell)
- 
-print "main cycle...",
+#print "main cycle commencing.\n"
  
 t_start = time.time()
-print('item type               buy orders    region           sell orders    region       trip profit      date dumped') # header    
+print('item type             sell orders     region           buy orders     region       trip profit      dumped:sell ordrs           buy ordrs') # header    
  
 realIterations = 0
 combCount = 0
@@ -149,18 +151,18 @@ for itemType in groupedMaster.keys():
     for sellItem in groupedMaster[itemType]['sell']:
         for buyItem in groupedMaster[itemType]['buy']:
             realIterations += 1
-            if (sellItem[0] < buyItem[0]*0.9):
-                combCount += 1
+            if (sellItem[0] < buyItem[0]*0.99): 
                 # margin for a single trip - min(#sell, #buy, #capacity/item volume)
                 margin = (buyItem[0] - sellItem[0])*min(sellItem[1],buyItem[1],buyItem[17])*0.99  
                 if margin > minmargin:
+                    combCount += 1
                     print('%-14s: %28s' % (sellItem[16], ' '.join((str(sellItem[1]), 'x', str(sellItem[0]),'isk ['+sellItem[15]+']')))),
                     print('>>'),
                     print('%28s %17s' % (' '.join((str(buyItem[1]),'x',str(buyItem[0]),'isk ['+buyItem[15]+']')), '('+str(margin)+' isk)')),
-                    print(' ... '+buyItem[-2]+' - '+sellItem[-2])
+                    print(' ... '+sellItem[-2]+' - '+buyItem[-2])
  
 t_end = time.time()
-print "took ",t_end-t_start,"s"
+print "\ntook %.3f s" % (t_end-t_start)
  
 print "%d iterations complete" % realIterations
 print "i have %d valid combinations" % combCount
