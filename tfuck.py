@@ -8,7 +8,7 @@ import time                                                            # for ben
  
 path = '.'
 maxdev = 1.2                                                            # max deviation of sell price (for sell order grouping)
-capacity = 167.0                                                        # capacity of ship's cargo hold - m^3
+capacity = 150                                                          # capacity of ship's cargo hold - m^3
 minmargin = 500000                                                      # minimal trip revenue
  
 tmp=[]; master=[]; tmaster=[]; buy=[]; sell=[]; filelist=[]; items=[]; 
@@ -59,7 +59,7 @@ for root, dirs, files in os.walk(path):
       else: 
         filelist.append(tmp)
 t_end = time.time()
-print "took %.3f s" % (t_end-t_start)
+print "took %.3fs" % (t_end-t_start)
  
 print "generating item list...",
 t_start = time.time()
@@ -75,7 +75,7 @@ for file in filelist:
     if not inside(tmplist[2],items,1):
       items.append((file[1],tmplist[2],'1.0'))    
 t_end = time.time()
-print "took %.3f s" % (t_end-t_start)
+print "took %.3fs" % (t_end-t_start)
  
  
 idb = open('_items.csv','w')
@@ -111,7 +111,7 @@ for i in master:
     i[1] = icn(i[1])
     i[15] = formatnames(i[15],8)
     i[16] = formatnames(i[16],14)                                      # Last data element
-    i = i + [int(capacity/volumes[i[2]])]
+    i = i + [int(capacity/volumes[i[2]])] # i[18]
     if i[7] == 'False':
         sell.append(i)
     elif i[7] == 'True':
@@ -143,7 +143,7 @@ print "found %d distinct item types\n" % len(groupedMaster)
 #print "main cycle commencing.\n"
  
 t_start = time.time()
-print('item type             sell orders     region           buy orders     region       trip profit      dumped:sell ordrs           buy ordrs') # header    
+print('item type              sell orders     region            buy orders     region       trip profit     dumped:sell ordrs           buy ordrs') # header    
  
 realIterations = 0
 combCount = 0
@@ -153,16 +153,18 @@ for itemType in groupedMaster.keys():
             realIterations += 1
             if (sellItem[0] < buyItem[0]*0.99): 
                 # margin for a single trip - min(#sell, #buy, #capacity/item volume)
-                margin = (buyItem[0] - sellItem[0])*min(sellItem[1],buyItem[1],buyItem[17])*0.99  
+                margin = (buyItem[0] - sellItem[0])*min(sellItem[1],buyItem[1],buyItem[18])*0.99 
                 if margin > minmargin:
                     combCount += 1
-                    print('%-14s: %28s' % (sellItem[16], ' '.join((str(sellItem[1]), 'x', str(sellItem[0]),'isk ['+sellItem[15]+']')))),
+                    print('%-14s:' % (sellItem[16])),
+                    print('%18s %10s' % (' '.join((str(sellItem[1]), 'x', str(sellItem[0]),'isk')), '['+sellItem[15]+']')),
                     print('>>'),
-                    print('%28s %17s' % (' '.join((str(buyItem[1]),'x',str(buyItem[0]),'isk ['+buyItem[15]+']')), '('+str(margin)+' isk)')),
-                    print(' ... '+sellItem[-2]+' - '+buyItem[-2])
+                    print('%18s %10s' % (' '.join((str(buyItem[1]),  'x', str(buyItem[0]),'isk')),  '['+buyItem[15]+']' )),
+                    print('%17s' % ('('+str(margin)+' isk)')),
+                    print('... '+sellItem[-2]+' - '+buyItem[-2])
  
 t_end = time.time()
-print "\ntook %.3f s" % (t_end-t_start)
+print "\ntook %.3fs" % (t_end-t_start)
  
 print "%d iterations complete" % realIterations
 print "i have %d valid combinations" % combCount
